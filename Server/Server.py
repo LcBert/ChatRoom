@@ -1,3 +1,4 @@
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QMainWindow, QApplication, QTableWidgetItem
 from PyQt5.QtCore import pyqtSignal, QObject
 from ServerThread import *
@@ -99,6 +100,10 @@ class MainApp(QMainWindow):
         for index, client in enumerate(self.clients):
             table.setItem(index, 0, QTableWidgetItem(str(client["id"])))
             table.setItem(index, 1, QTableWidgetItem(client["name"]))
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:
+        self.closeServer()
+        return super().closeEvent(event)
 
 
 if __name__ == "__main__":
