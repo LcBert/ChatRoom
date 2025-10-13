@@ -142,8 +142,6 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.clients_container = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.clients_container.setObjectName("clients_container")
-        spacerItem5 = QtWidgets.QSpacerItem(20, 207, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.clients_container.addItem(spacerItem5)
         self.clientList_scrollArea.setWidget(self.scrollAreaWidgetContents_2)
         self.gridLayout_3.addWidget(self.clientList_scrollArea, 0, 0, 1, 1)
         self.gridLayout.addWidget(self.frame, 2, 0, 1, 2)

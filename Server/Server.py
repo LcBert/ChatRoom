@@ -13,6 +13,21 @@ class WorkerSignals(QObject):
     disconnect_client = pyqtSignal(int)
 
 
+def sendMessage(clients: list[dict], type: Literal["user_message", "refresh_list"], text: str = "", sender_name: str = "", sender_id: int = -1):
+    if type == "refresh_list":
+        text = ",".join(client["name"] for client in clients)
+
+    message: dict = {
+        "type": type,
+        "text": text,
+        "sender_name": sender_name,
+        "sender_id": sender_id
+    }
+
+    for client in clients:
+        client["conn"].send(f"{json.dumps(message)}".encode())
+
+
 class MainApp(QMainWindow):
     def __init__(self, ip: str = "localhost", port: int = 50000):
         super().__init__()
@@ -69,30 +84,26 @@ class MainApp(QMainWindow):
                 ids_list.append(int(item.text()))
 
         ids_list = list(ids_list)
-        self.disconnectClient(ids_list)
+        for id in ids_list:
+            self.disconnectClient(id)
 
-    def disconnectClient(self, ids_list: list[int]):
-        remaining_clients = []
-
-        if isinstance(ids_list, int):
-            ids_list = [ids_list]
-        else:
-            ids_list = ids_list
+    def disconnectClient(self, ids_list: int):
+        client_to_disconnect: socket.socket = socket.socket()
+        remaining_clients: list[dict] = []
 
         for client in self.clients:
-            client_id = client["id"]
-
-            if client_id in ids_list:
-                try:
-                    client["conn"].close()
-                except AttributeError:
-                    pass
+            if client["id"] == ids_list:
+                client_to_disconnect = client["conn"]
             else:
                 remaining_clients.append(client)
+
+        client_to_disconnect.close()
 
         self.clients.clear()
         self.clients.extend(remaining_clients)
         self.signals.clients_updated.emit()
+
+        sendMessage(self.clients, "refresh_list")
 
     def refreshClientsTable(self):
         table = self.ui.clientsTable

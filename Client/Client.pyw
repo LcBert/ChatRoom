@@ -33,9 +33,9 @@ class ThreadReceive(Thread):
             try:
                 message = json.loads(self.socket.recv(1024).decode())
                 type: str = message["type"]
-                text: str = message["text"]
-                sender_name: str = message["sender_name"]
-                sender_id: int = int(message["sender_id"])
+                text: str | None = message["text"]
+                sender_name: str | None = message["sender_name"]
+                sender_id: int | None = int(message["sender_id"])
 
                 match (type):
                     case "user_message":
@@ -114,7 +114,7 @@ class MainApp(QMainWindow):
             label.setText(client)
 
             self.ui.clients_container.addWidget(label)
-        self.ui.clients_container.addItem(QSpacerItem(27, 207, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        self.ui.clients_container.addItem(QSpacerItem(20, 40, QSizePolicy.Expanding, QSizePolicy.Expanding))
 
     def clearLayout(self, layout):
         if layout is not None:
@@ -168,6 +168,7 @@ class MainApp(QMainWindow):
             self.ui.disconnect_button.setDisabled(True)
             self.ui.message_lineEdit.setDisabled(True)
             self.ui.send_button.setDisabled(True)
+            self.clearLayout(self.ui.clients_container)
         except Exception:
             print("Disconnection Error")
 

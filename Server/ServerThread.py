@@ -3,7 +3,7 @@ from threading import Thread
 from typing import Literal
 import json
 
-from Server import WorkerSignals
+from Server import WorkerSignals, sendMessage
 
 
 class ServerThread(Thread):
@@ -53,30 +53,15 @@ class Connection(Thread):
         self.connected: bool = True
         self.conn.send(f"{self.client_id}".encode())
 
-        clients_list = ",".join(client["name"] for client in self.clients)
-        # clients_list: str = ""
-        # for client in self.clients:
-        #     clients_list += f"{client["name"]},"
-        self.sendMessage("refresh_list", clients_list, self.client_name, self.client_id)
+        sendMessage(self.clients, "refresh_list")
 
         while self.connected:
             try:
                 text: str = self.conn.recv(1024).decode()
-                self.sendMessage("user_message", text, self.client_name, self.client_id)
+                sendMessage(self.clients, "user_message", text, self.client_name, self.client_id)
             except WindowsError:
                 self.signals.disconnect_client.emit(self.client_id)
                 print(f"{self.client_name} disconnected")
                 self.connected = False
             except Exception:
                 print("Server Error")
-
-    def sendMessage(self, type: Literal["user_message", "refresh_list"], text, sender_name: str, sender_id: int):
-        message: dict = {
-            "type": type,
-            "text": text,
-            "sender_name": sender_name,
-            "sender_id": sender_id
-        }
-
-        for client in self.clients:
-            client["conn"].send(f"{json.dumps(message)}".encode())
