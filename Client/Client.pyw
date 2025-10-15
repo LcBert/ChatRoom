@@ -84,7 +84,7 @@ class MainApp(QMainWindow):
             self.ui.port_lineEdit.setText(sett_dict["port"])
             self.ui.name_lineEdit.setText(sett_dict["name"])
 
-    def saveNetworkSettings(self):
+    def saveNetworkSettings(self) -> None:
         sett_dict = {}
         sett_dict["ip"] = self.ui.ip_lineEdit.text().strip()
         sett_dict["port"] = self.ui.port_lineEdit.text().strip()
@@ -95,7 +95,7 @@ class MainApp(QMainWindow):
                 self.netSettFile.create()
             self.netSettFile.write(json.dumps(sett_dict))
 
-    def clearNetworkSettings(self):
+    def clearNetworkSettings(self) -> None:
         if (self.netSettFile.exists()):
             self.netSettFile.delete()
 
@@ -103,7 +103,7 @@ class MainApp(QMainWindow):
         self.ui.port_lineEdit.clear()
         self.ui.name_lineEdit.clear()
 
-    def refreshClientsList(self, list: str):
+    def refreshClientsList(self, list: str) -> None:
         self.clearLayout(self.ui.clients_container)
         for client in list.split(","):
             label = QLabel()
@@ -112,7 +112,7 @@ class MainApp(QMainWindow):
             self.ui.clients_container.addWidget(label)
         self.ui.clients_container.addItem(QSpacerItem(20, 40, QSizePolicy.Expanding, QSizePolicy.Expanding))
 
-    def clearLayout(self, layout):
+    def clearLayout(self, layout) -> None:
         if layout is not None:
             while layout.count():
                 child = layout.takeAt(0)
@@ -122,7 +122,7 @@ class MainApp(QMainWindow):
                     elif child.layout() is not None:
                         self.clearLayout(child.layout())
 
-    def connectSocket(self):
+    def connectSocket(self) -> None:
         try:
             ip = self.ui.ip_lineEdit.text().strip()
             port = self.ui.port_lineEdit.text().strip()
@@ -155,7 +155,7 @@ class MainApp(QMainWindow):
         except Exception:
             print("Connection Error")
 
-    def disconnectSocket(self):
+    def disconnectSocket(self) -> None:
         try:
             self.socket.close()
             self.setStatus("Disconnected from server", "info")
@@ -173,7 +173,7 @@ class MainApp(QMainWindow):
         label.setText(text)
         self.ui.message_container.addWidget(label)
 
-    def sendMessage(self):
+    def sendMessage(self) -> None:
         try:
             text = self.ui.message_lineEdit.text()
             if (text != ""):
@@ -192,8 +192,7 @@ class MainApp(QMainWindow):
         self.disconnectSocket()
         return super().closeEvent(event)
 
-    def setStatus(self, status: str, type: Literal["info", "warning", "error"] = "info"):
-        print(status)
+    def setStatus(self, status: str, type: Literal["info", "warning", "error"] = "info") -> None:
         self.ui.connectionStatut_label.setText(status)
         if (type == "info"):
             self.ui.connectionStatut_label.setStyleSheet("color:green;")

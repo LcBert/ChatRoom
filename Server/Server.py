@@ -13,7 +13,7 @@ class WorkerSignals(QObject):
     disconnect_client = pyqtSignal(int)
 
 
-def sendMessage(clients: list["Connection"], type: Literal["user_message", "refresh_list"], text: str = "", sender_name: str = "", sender_id: int = -1):
+def sendMessage(clients: list["Connection"], type: Literal["user_message", "refresh_list"], text: str = "", sender_name: str = "", sender_id: int = -1) -> None:
     if type == "refresh_list":
         text = ",".join(client.getName() for client in clients)
 
@@ -49,7 +49,7 @@ class MainApp(QMainWindow):
         self.signals.clients_updated.connect(self.refreshClientsTable)
         self.signals.disconnect_client.connect(self.disconnectClient)
 
-    def openServer(self):
+    def openServer(self) -> None:
         ip = self.ui.ip_lineEdit.text().strip()
         port = self.ui.port_lineEdit.text().strip()
 
@@ -65,7 +65,7 @@ class MainApp(QMainWindow):
         self.ui.closeServer_button.setDisabled(False)
         self.ui.disconnectClient_button.setDisabled(False)
 
-    def closeServer(self):
+    def closeServer(self) -> None:
         self.serverThread.stop()
         for client in self.clients:
             client.getSocket().close()
@@ -76,7 +76,7 @@ class MainApp(QMainWindow):
         self.ui.closeServer_button.setDisabled(True)
         self.ui.disconnectClient_button.setDisabled(True)
 
-    def getSelectedClient(self):
+    def getSelectedClient(self) -> None:
         table = self.ui.clientsTable
         ids_list: list[int] = []
         for item in table.selectedItems():
@@ -87,12 +87,12 @@ class MainApp(QMainWindow):
         for id in ids_list:
             self.disconnectClient(id)
 
-    def disconnectClient(self, ids_list: int):
+    def disconnectClient(self, id: int) -> None:
         client_to_disconnect: socket.socket = socket.socket()
         remaining_clients: list[Connection] = []
 
         for client in self.clients:
-            if client.getId() == ids_list:
+            if client.getId() == id:
                 client_to_disconnect = client.getSocket()
             else:
                 remaining_clients.append(client)
@@ -105,7 +105,7 @@ class MainApp(QMainWindow):
 
         sendMessage(self.clients, "refresh_list")
 
-    def refreshClientsTable(self):
+    def refreshClientsTable(self) -> None:
         table = self.ui.clientsTable
         table.setRowCount(len(self.clients))
         for index, client in enumerate(self.clients):
