@@ -90,10 +90,6 @@ class MainApp(QMainWindow):
         sett_dict["port"] = self.ui.port_lineEdit.text().strip()
         sett_dict["name"] = self.ui.name_lineEdit.text().strip()
 
-        print(sett_dict["ip"] == "")
-        print(sett_dict["port"] == "")
-        print(sett_dict["name"] == "")
-
         if not (sett_dict["ip"] == "" and sett_dict["port"] == "" and sett_dict["name"] == ""):
             if not self.netSettFile.exists():
                 self.netSettFile.create()

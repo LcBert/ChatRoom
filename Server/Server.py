@@ -13,9 +13,9 @@ class WorkerSignals(QObject):
     disconnect_client = pyqtSignal(int)
 
 
-def sendMessage(clients: list[dict], type: Literal["user_message", "refresh_list"], text: str = "", sender_name: str = "", sender_id: int = -1):
+def sendMessage(clients: list["Connection"], type: Literal["user_message", "refresh_list"], text: str = "", sender_name: str = "", sender_id: int = -1):
     if type == "refresh_list":
-        text = ",".join(client["name"] for client in clients)
+        text = ",".join(client.getName() for client in clients)
 
     message: dict = {
         "type": type,
@@ -25,7 +25,7 @@ def sendMessage(clients: list[dict], type: Literal["user_message", "refresh_list
     }
 
     for client in clients:
-        client["conn"].send(f"{json.dumps(message)}".encode())
+        client.getSocket().send(f"{json.dumps(message)}".encode())
 
 
 class MainApp(QMainWindow):
@@ -35,7 +35,7 @@ class MainApp(QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle("ChatRoom - Server")
         self.connected: bool = False
-        self.clients: list[dict] = []
+        self.clients: list[Connection] = []
         self.ip, self.port = ip, port
         self.signals: WorkerSignals = WorkerSignals()
 
@@ -68,7 +68,7 @@ class MainApp(QMainWindow):
     def closeServer(self):
         self.serverThread.stop()
         for client in self.clients:
-            client["conn"].close()
+            client.getSocket().close()
 
         self.ui.ip_lineEdit.setDisabled(False)
         self.ui.port_lineEdit.setDisabled(False)
@@ -89,11 +89,11 @@ class MainApp(QMainWindow):
 
     def disconnectClient(self, ids_list: int):
         client_to_disconnect: socket.socket = socket.socket()
-        remaining_clients: list[dict] = []
+        remaining_clients: list[Connection] = []
 
         for client in self.clients:
-            if client["id"] == ids_list:
-                client_to_disconnect = client["conn"]
+            if client.getId() == ids_list:
+                client_to_disconnect = client.getSocket()
             else:
                 remaining_clients.append(client)
 
@@ -109,8 +109,8 @@ class MainApp(QMainWindow):
         table = self.ui.clientsTable
         table.setRowCount(len(self.clients))
         for index, client in enumerate(self.clients):
-            table.setItem(index, 0, QTableWidgetItem(str(client["id"])))
-            table.setItem(index, 1, QTableWidgetItem(client["name"]))
+            table.setItem(index, 0, QTableWidgetItem(str(client.getId())))
+            table.setItem(index, 1, QTableWidgetItem(client.getName()))
 
     def closeEvent(self, event: QCloseEvent | None) -> None:
         self.closeServer()
