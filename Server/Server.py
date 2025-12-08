@@ -34,7 +34,7 @@ class MainApp(QMainWindow):
         self.ui = MainWindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("ChatRoom - Server")
-        self.connected: bool = False
+
         self.clients: list[Connection] = []
         self.ip, self.port = ip, port
         self.signals: WorkerSignals = WorkerSignals()
@@ -66,9 +66,12 @@ class MainApp(QMainWindow):
         self.ui.disconnectClient_button.setDisabled(False)
 
     def closeServer(self) -> None:
-        self.serverThread.stop()
-        for client in self.clients:
-            client.getSocket().close()
+        try:
+            self.serverThread.stop()
+            for client in self.clients:
+                client.getSocket().close()
+        except AttributeError as e:
+            print("No server opened - Closing")
 
         self.ui.ip_lineEdit.setDisabled(False)
         self.ui.port_lineEdit.setDisabled(False)

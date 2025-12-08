@@ -6,6 +6,7 @@ import json
 from Server import WorkerSignals, sendMessage
 
 
+# Server Thread for accept incoming connection
 class ServerThread(Thread):
     def __init__(self, clients: list["Connection"],  signals: WorkerSignals,  ip: str, port: int):
         super(ServerThread, self).__init__()
@@ -21,9 +22,9 @@ class ServerThread(Thread):
         self.socket.bind((self.ip, self.port))
         self.connected = True
         print(f"Server opened with IP: {self.ip} and Port: {self.port}")
+        self.socket.listen(1)
         try:
             while self.connected:
-                self.socket.listen(2)
                 self.conn, self.addr = self.socket.accept()
                 self.client_name = self.conn.recv(1024).decode()
                 self.connection_thread = Connection(self.conn, self.client_id, self.client_name, self.clients, self.signals)
@@ -32,11 +33,13 @@ class ServerThread(Thread):
                 self.client_id += 1
         except Exception:
             self.connected = False
+        print("Server Closed")
 
     def stop(self):
         self.socket.close()
 
 
+# Thread for each connection C/S
 class Connection(Thread):
     def __init__(self,  conn: socket.socket, client_id: int, client_name: str, clients: list["Connection"], signals: WorkerSignals):
         super(Connection, self).__init__()
