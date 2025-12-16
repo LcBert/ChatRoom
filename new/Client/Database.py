@@ -3,10 +3,16 @@ from datetime import datetime
 
 
 class Database():
-    def __init__(self, username: str):
+    def __init__(self):
+        self.conn: sqlite3.Connection
+        self.cursor: sqlite3.Cursor
+
+    def setDatabase(self, username: str):
+        self.closeDatabase()
         self.conn = sqlite3.connect(f"chatroom-{username}.db", check_same_thread=False)
         self.cursor = self.conn.cursor()
 
+    def initDatabase(self):
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -16,8 +22,13 @@ class Database():
                 message TEXT NOT NULL
             )
         ''')
-
         self.commit()
+
+    def closeDatabase(self):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
 
     def addMessage(self, sender_username: str, receiver_username: str, message: str):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

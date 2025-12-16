@@ -81,6 +81,13 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="addFriendButton">
+        <property name="text">
+         <string>Add Friend</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="0">
        <widget class="QWidget" name="widget" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout">
@@ -97,10 +104,10 @@
         </layout>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QPushButton" name="addFriendButton">
+      <item row="2" column="0">
+       <widget class="QLabel" name="addFriendStatusLabel">
         <property name="text">
-         <string>Add Friend</string>
+         <string/>
         </property>
        </widget>
       </item>

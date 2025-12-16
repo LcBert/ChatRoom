@@ -17,6 +17,8 @@ from Database import Database
 
 class WorkingSignals(QObject):
     message_received = pyqtSignal()
+    user_login = pyqtSignal(str)
+    user_register = pyqtSignal(str)
 
 
 class FriendLabel(QLabel):
@@ -67,13 +69,13 @@ class ChatPageApp(QMainWindow):
         self.database: Database
         self.signals = WorkingSignals()
         self.ip, self.port = ip, port
+        self.database = Database()
+        self.connect()
+
         self.setWindowTitle("ChatRoom - Client")
 
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
-
-        # Signals Connections
-        self.signals.message_received.connect(lambda: self.refreshChat(self.open_chat_username))
 
         # Setup Chat Page
         self.chatPageWidget = QMainWindow()
@@ -98,14 +100,19 @@ class ChatPageApp(QMainWindow):
 
         self.clientReceive: ClientReceive
 
+        # Signals Connections
+        self.signals.message_received.connect(lambda: self.refreshChat(self.open_chat_username))
+        self.signals.user_login.connect(self.login)
+        self.signals.user_register.connect(self.register)
+
         # Chat Page Buttons Bindings
         self.chatPage.addFriendButton.clicked.connect(self.openAddFriendPage)
         self.chatPage.sendMessageButton.clicked.connect(lambda: self.sendMessage(self.chatPage.messageLineEdit.text()))
-        self.chatPage.changeAccountAction.triggered.connect(self.openAccessPage)
+        self.chatPage.changeAccountAction.triggered.connect(lambda: self.openAccessPage())
 
         # Access Page Buttons Bindings
-        self.accessPage.loginButton.clicked.connect(self.login)
-        self.accessPage.registerButton.clicked.connect(self.register)
+        self.accessPage.loginButton.clicked.connect(self.loginRequest)
+        self.accessPage.registerButton.clicked.connect(self.registerRequest)
 
         # AddFriend Page Buttons Bindings
         self.addFriendPage.addFriendButton.clicked.connect(self.addFriend)
@@ -115,6 +122,7 @@ class ChatPageApp(QMainWindow):
         self.socket.connect((self.ip, self.port))
 
         self.clientReceive = ClientReceive(self, self.socket, self.database, self.signals)
+        self.clientReceive.start()
 
     def openChatPage(self):
         self.stacked_widget.setCurrentWidget(self.chatPageWidget)
@@ -127,11 +135,11 @@ class ChatPageApp(QMainWindow):
     def openAddFriendPage(self):
         self.stacked_widget.setCurrentWidget(self.addFriendPageWidget)
 
-    def login(self):
+    def loginRequest(self):
         self.username = self.accessPage.loginUsernameInput.text()
         password = self.accessPage.loginPasswordInput.text()
-        self.database = Database(self.username)
-        self.connect()
+
+        self.database.setDatabase(self.username)
 
         loginMessage: dict = {
             "type": "login",
@@ -140,31 +148,25 @@ class ChatPageApp(QMainWindow):
         }
         self.socket.send(json.dumps(loginMessage).encode())
 
-        check: str = self.socket.recv(1024).decode()
+    def login(self, check: str):
         if (check == "success"):
             self.accessPage.loginStatusLabel.setText("Login successful!")
             self.stacked_widget.setCurrentWidget(self.chatPageWidget)
             self.username = self.accessPage.loginUsernameInput.text()
             self.setWindowTitle(f"ChatRoom - Client ({self.username})")
 
-            try:
-                self.clientReceive.start()
-            except Exception as e:
-                pass
-
             self.accessPage.loginUsernameInput.setText("")
             self.accessPage.loginPasswordInput.setText("")
         elif (check == "failure"):
             self.accessPage.loginStatusLabel.setText("Invalid username or password!")
 
-    def register(self):
+    def registerRequest(self):
         self.username = self.accessPage.registerUsernameInput.text()
         password = self.accessPage.registerPasswordInput.text()
         confirm_password = self.accessPage.registerPasswordConfirmInput.text()
-        self.database = Database(self.username)
-        self.connect()
 
         if (password == confirm_password):
+            self.database.setDatabase(self.username)
             registerMessage: dict = {
                 "type": "register",
                 "username": self.username,
@@ -172,32 +174,29 @@ class ChatPageApp(QMainWindow):
             }
             self.socket.send(json.dumps(registerMessage).encode())
 
-            check: str = self.socket.recv(1024).decode()
+    def register(self, check: str):
+        if (check == "success"):
+            self.accessPage.registerStatusLabel.setText("Registration successful!")
+            self.stacked_widget.setCurrentWidget(self.chatPageWidget)
+            self.username = self.accessPage.registerUsernameInput.text()
+            self.setWindowTitle(f"ChatRoom - Client ({self.username})")
 
-            if (check == "success"):
-                self.accessPage.registerStatusLabel.setText("Registration successful!")
-                self.stacked_widget.setCurrentWidget(self.chatPageWidget)
-                self.username = self.accessPage.registerUsernameInput.text()
-                self.setWindowTitle(f"ChatRoom - Client ({self.username})")
-
-                try:
-                    self.clientReceive.start()
-                except Exception as e:
-                    pass
-
-                self.accessPage.registerUsernameInput.setText("")
-                self.accessPage.registerPasswordInput.setText("")
-                self.accessPage.registerPasswordConfirmInput.setText("")
-
-            elif (check == "failure"):
-                self.accessPage.registerStatusLabel.setText("Username already exists!")
+            self.accessPage.registerUsernameInput.setText("")
+            self.accessPage.registerPasswordInput.setText("")
+            self.accessPage.registerPasswordConfirmInput.setText("")
+        elif (check == "failure"):
+            self.accessPage.registerStatusLabel.setText("Username already exists!")
 
     def addFriend(self):
-        self.openChatPage()
         friend_username: str = self.addFriendPage.addFriendUsernameInput.text()
         self.addFriendPage.addFriendUsernameInput.setText("")
 
+        if (friend_username == self.username):
+            self.addFriendPage.addFriendStatusLabel.setText("You cannot add yourself as a friend!")
+            return
+
         if friend_username:
+            self.openChatPage()
             layout = self.chatPage.friendsListLayout
 
             # Remove the spacer (last item)
@@ -260,10 +259,18 @@ class ClientReceive(Thread):
                 text: str = self.socket.recv(1024).decode()
                 messages: dict = json.loads(text)
 
-                if (messages["type"] == "user_message"):
-                    self.database.addMessage(messages["sender_username"], messages["receiver_username"], messages["message"])
-                    if (self.app.open_chat_username == messages["sender_username"]):
-                        self.signals.message_received.emit()
+                match(messages["type"]):
+                    case "login":
+                        self.signals.user_login.emit(messages["check"])
+
+                    case "register":
+                        self.signals.user_register.emit(messages["check"])
+
+                    case "user_message":
+                        self.database.addMessage(messages["sender_username"], messages["receiver_username"], messages["message"])
+                        if (self.app.open_chat_username == messages["sender_username"]):
+                            self.signals.message_received.emit()
+                        break
             except Exception as e:
                 print(f"Client Receive Error: {e}")
                 break

@@ -4,7 +4,6 @@ from Database import Database
 from threading import Thread
 import socket
 import json
-import time
 
 
 class IncomingMessages(Thread):
@@ -31,7 +30,6 @@ class IncomingMessages(Thread):
                             self.database.removeMessage(message["id"])
                         except Exception as e:
                             print(f"Error sending message to {client.getUsername()}: {e}")
-            time.sleep(15)
 
     def stop(self):
         self.running = False
@@ -101,22 +99,39 @@ class Connection(Thread):
                 print(f"Server Error: {e}")
 
     def loginUser(self, message: dict):
+
         username: str = message["username"]
         password: str = message["password"]
         if (self.database.loginUser(username, password)):
-            self.socket.send("success".encode())
+            send_message: dict = {
+                "type": "login",
+                "check": "success"
+            }
+            self.socket.send(json.dumps(send_message).encode())
             self.username = message["username"]
         else:
+            send_message: dict = {
+                "type": "login",
+                "check": "failure"
+            }
             self.socket.send("failure".encode())
 
     def registerUser(self, message: dict):
         username: str = message["username"]
         password: str = message["password"]
         if (self.database.registerUser(username, password)):
-            self.socket.send("success".encode())
+            send_message: dict = {
+                "type": "register",
+                "check": "success"
+            }
+            self.socket.send(json.dumps(send_message).encode())
             self.username = message["username"]
         else:
-            self.socket.send("failure".encode())
+            send_message: dict = {
+                "type": "register",
+                "check": "failure"
+            }
+            self.socket.send(json.dumps(send_message).encode())
 
     def getUsername(self) -> str:
         return self.username

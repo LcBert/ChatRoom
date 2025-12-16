@@ -30,6 +30,9 @@ class Ui_AddFriendPage(object):
         self.gridLayout_2 = QtWidgets.QGridLayout(self.widget_2)
         self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
         self.gridLayout_2.setObjectName("gridLayout_2")
+        self.addFriendButton = QtWidgets.QPushButton(self.widget_2)
+        self.addFriendButton.setObjectName("addFriendButton")
+        self.gridLayout_2.addWidget(self.addFriendButton, 1, 0, 1, 1)
         self.widget = QtWidgets.QWidget(self.widget_2)
         self.widget.setObjectName("widget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.widget)
@@ -41,9 +44,10 @@ class Ui_AddFriendPage(object):
         self.addFriendUsernameInput.setObjectName("addFriendUsernameInput")
         self.horizontalLayout.addWidget(self.addFriendUsernameInput)
         self.gridLayout_2.addWidget(self.widget, 0, 0, 1, 1)
-        self.addFriendButton = QtWidgets.QPushButton(self.widget_2)
-        self.addFriendButton.setObjectName("addFriendButton")
-        self.gridLayout_2.addWidget(self.addFriendButton, 1, 0, 1, 1)
+        self.addFriendStatusLabel = QtWidgets.QLabel(self.widget_2)
+        self.addFriendStatusLabel.setText("")
+        self.addFriendStatusLabel.setObjectName("addFriendStatusLabel")
+        self.gridLayout_2.addWidget(self.addFriendStatusLabel, 2, 0, 1, 1)
         self.gridLayout.addWidget(self.widget_2, 1, 1, 1, 1)
 
         self.retranslateUi(AddFriendPage)
@@ -52,8 +56,8 @@ class Ui_AddFriendPage(object):
     def retranslateUi(self, AddFriendPage):
         _translate = QtCore.QCoreApplication.translate
         AddFriendPage.setWindowTitle(_translate("AddFriendPage", "Form"))
-        self.label.setText(_translate("AddFriendPage", "Username"))
         self.addFriendButton.setText(_translate("AddFriendPage", "Add Friend"))
+        self.label.setText(_translate("AddFriendPage", "Username"))
 
 
 if __name__ == "__main__":
