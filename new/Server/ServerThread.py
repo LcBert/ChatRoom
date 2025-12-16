@@ -1,8 +1,40 @@
+from typing import Mapping
 from Database import Database
 
 from threading import Thread
 import socket
 import json
+import time
+
+
+class IncomingMessages(Thread):
+    def __init__(self, clients_list: list["Connection"], database: Database):
+        super(IncomingMessages, self).__init__()
+        self.clients_list = clients_list
+        self.database = database
+        self.running = True
+
+    def run(self):
+        while self.running:
+            messages = self.database.getMessages()
+            for message in messages:
+                for client in self.clients_list:
+                    if client.getUsername() == message["receiver_username"]:
+                        try:
+                            client.getSocket().send(json.dumps({
+                                "type": "user_message",
+                                "sender_username": message["sender_username"],
+                                "receiver_username": message["receiver_username"],
+                                "message": message["message"],
+                                "timestamp": message["timestamp"]
+                            }).encode())
+                            self.database.removeMessage(message["id"])
+                        except Exception as e:
+                            print(f"Error sending message to {client.getUsername()}: {e}")
+            time.sleep(15)
+
+    def stop(self):
+        self.running = False
 
 
 class ServerThread(Thread):
@@ -43,6 +75,7 @@ class Connection(Thread):
         self.clients: list[Connection] = clients_list
         self.database = Database()
         self.connected = True
+        self.username = ""
 
     def run(self):
         print("Client connected")
@@ -55,8 +88,8 @@ class Connection(Thread):
                         self.registerUser(message)
                     case "login":
                         self.loginUser(message)
-                    case "get_chat_history":
-                        self.getChatHistory(message)
+                    case "message":
+                        self.database.addMessage(message["sender_username"], message["receiver_username"], message["message"])
 
             except WindowsError:
                 print("Client disconnected")
@@ -72,34 +105,21 @@ class Connection(Thread):
         password: str = message["password"]
         if (self.database.loginUser(username, password)):
             self.socket.send("success".encode())
+            self.username = message["username"]
         else:
             self.socket.send("failure".encode())
 
     def registerUser(self, message: dict):
         username: str = message["username"]
         password: str = message["password"]
+        if (self.database.registerUser(username, password)):
+            self.socket.send("success".encode())
+            self.username = message["username"]
         else:
             self.socket.send("failure".encode())
 
-    def getChatHistory(self, message: dict):
-        sender = message["sender"]
-        receiver = message["receiver"]
-        messages = self.database.getMessages(sender, receiver)
-        # messages is a list of tuples: (timestamp, sender, receiver, message)
-        # Convert to list of dicts for JSON serialization
-        history = []
-        for msg in messages:
-            history.append({
-                "timestamp": msg[0],
-                "sender": msg[1],
-                "receiver": msg[2],
-                "message": msg[3]
-            })
-        self.socket.send(json.dumps({"type": "chat_history", "data": history}).encode())
-        if (self.database.registerUser(username, password)):
-            self.socket.send("success".encode())
-        else:
-            self.socket.send("failure".encode())
+    def getUsername(self) -> str:
+        return self.username
 
     def getSocket(self) -> socket.socket:
         return self.socket
